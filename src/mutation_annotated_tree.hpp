@@ -62,6 +62,7 @@ namespace Mutation_Annotated_Tree {
             assert(other.chrom==chrom);
             assert(other.ref_nuc==ref_nuc);
             return true;
+        }
         inline bool is_masked() const {
             return (position < 0);
         }

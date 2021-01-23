@@ -1235,14 +1235,13 @@ int main(int argc, char **argv) {
                     curr_node_mutation_string = sample + ":";
                     size_t num_mutations = curr_node_mutations.size();
                     for (size_t k = 0; k < num_mutations; k++) {
-                        curr_node_mutation_string += curr_node_mutations[k].get_string();
+                        curr_node_mutation_string += curr_node_mutations.find(k)->get_string();
                         if (k < num_mutations-1) {
                             curr_node_mutation_string += ',';
                         }
                         else {
                             curr_node_mutation_string += ' ';    
                         }
-                        k++;
                     }
                     mutation_stack.push(curr_node_mutation_string);
                 }
@@ -1254,14 +1253,13 @@ int main(int argc, char **argv) {
                         curr_node_mutation_string = anc_node->identifier + ":";
                         size_t num_mutations = curr_node_mutations.size();
                         for (size_t k = 0; k < num_mutations; k++) {
-                            curr_node_mutation_string += curr_node_mutations[k].get_string(); 
+                            curr_node_mutation_string += curr_node_mutations.find(k)->get_string(); 
                             if (k < num_mutations-1) {
                                 curr_node_mutation_string += ',';
                             }
                             else {
                                 curr_node_mutation_string += ' ';    
                             }
-                            k++;
                         }
                         mutation_stack.push(curr_node_mutation_string);
                     }
@@ -1436,12 +1434,11 @@ int main(int argc, char **argv) {
                         fprintf(subtree_mutations_file, "%s: ", n->identifier.c_str());
 
                         for (size_t idx = 0; idx < tot_mutations; idx++) {
-                            auto m = subtree_node_mutations[n][idx];
-                            fprintf(subtree_mutations_file, "%s", m.get_string().c_str());
+                            auto m = subtree_node_mutations[n].find(idx);
+                            fprintf(subtree_mutations_file, "%s", m->get_string().c_str());
                             if (idx+1 <tot_mutations) {
                                 fprintf(subtree_mutations_file, ",");
                             }
-                            idx++;
                         }
                         fprintf(subtree_mutations_file, "\n");
                     }
