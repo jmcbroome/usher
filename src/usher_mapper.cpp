@@ -222,6 +222,7 @@ void mapper2_body(mapper2_input& input, bool compute_parsimony_scores) {
                             anc_positions.emplace_back(m1.position);
                             if (!compute_parsimony_scores) {
                                 assert((m.mut_nuc & (m.mut_nuc-1)) == 0);
+                                assert(m.par_nuc!=m.mut_nuc);
                                 (*input.excess_mutations).emplace_back(m);
                             }
                             // Ambiguous base
@@ -251,6 +252,7 @@ void mapper2_body(mapper2_input& input, bool compute_parsimony_scores) {
                     anc_positions.emplace_back(m1.position);
                     if (!compute_parsimony_scores) {
                         assert((m.mut_nuc & (m.mut_nuc-1)) == 0);
+                        assert(m.par_nuc!=m.mut_nuc);
                         (*input.excess_mutations).emplace_back(m);
                     }
                     num_common_mut++;
@@ -372,6 +374,7 @@ void mapper2_body(mapper2_input& input, bool compute_parsimony_scores) {
                 }
             }
             assert((m.mut_nuc & (m.mut_nuc-1)) == 0);
+            assert(m.par_nuc!=m.mut_nuc);
             input.excess_mutations->emplace_back(m);
             // If the missing sample base is ambiguous, add it to
             // imputed_mutations
@@ -409,10 +412,7 @@ void mapper2_body(mapper2_input& input, bool compute_parsimony_scores) {
                 }
             }
         }
-        // If ancestral mutation is found, do nothing. Else, if last ancestor
-        // with mutation in the same position is found having reference allele, do
-        // nothing. In all remaining cases, add the mutation to excess_mutations. 
-        if (found) {
+        if (found_pos) {
         }
         else if (!found_pos && !m1.is_masked() && (anc_nuc == m1.ref_nuc)) {
         }
@@ -427,7 +427,9 @@ void mapper2_body(mapper2_input& input, bool compute_parsimony_scores) {
             m.ref_nuc = m1.ref_nuc;
             m.par_nuc = anc_nuc;
             m.mut_nuc = m1.ref_nuc;
+          
             assert(m.is_masked() || ((m.mut_nuc & (m.mut_nuc-1)) == 0));
+          
             (*input.excess_mutations).emplace_back(m);
         }
     }

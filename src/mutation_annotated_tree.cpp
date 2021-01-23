@@ -1,6 +1,8 @@
 #include "mutation_annotated_tree.hpp"
+#include <algorithm>
+#include <cstddef>
 #include <iomanip>
-
+#include <cassert>
 // Uses one-hot encoding if base is unambiguous
 // A:1,C:2,G:4,T:8
 int8_t Mutation_Annotated_Tree::get_nuc_id (char nuc) {
@@ -510,9 +512,10 @@ Mutation_Annotated_Tree::Node::Node() {
     parent = NULL;
     branch_length = -1.0;
     mutations.clear();
+    is_new=false;
 }
 
-Mutation_Annotated_Tree::Node::Node (std::string id, float len) {
+Mutation_Annotated_Tree::Node::Node (std::string id, float len) :is_new(0){
     identifier = id;
     parent = NULL;
     level = 1;
@@ -520,20 +523,11 @@ Mutation_Annotated_Tree::Node::Node (std::string id, float len) {
     mutations.clear();
 }
 
-Mutation_Annotated_Tree::Node::Node (std::string id, Node* p, float len) {
+Mutation_Annotated_Tree::Node::Node (std::string id, Node* p, float len):is_new(0) {
     identifier = id;
     parent = p;
     level = p->level + 1;
     branch_length = len;
-    mutations.clear();
-}
-
-void Mutation_Annotated_Tree::Node::add_mutation (Mutation mut) {
-    mutations.insert(std::upper_bound(mutations.begin(), mutations.end(), mut),
-            mut);
-}
-
-void Mutation_Annotated_Tree::Node::clear_mutations() {
     mutations.clear();
 }
 
@@ -626,7 +620,7 @@ void Mutation_Annotated_Tree::Tree::create_node (std::string identifier, float b
     all_nodes[identifier] = root;
 }
 
-void Mutation_Annotated_Tree::Tree::create_node (std::string identifier, std::string parent_id, float branch_len) {
+Mutation_Annotated_Tree::Node* Mutation_Annotated_Tree::Tree::create_node (std::string identifier, std::string parent_id, float branch_len) {
     Node* par = all_nodes[parent_id];
     Node* n = new Node(identifier, par, branch_len);
     if (all_nodes.find(identifier) != all_nodes.end()) {
@@ -638,6 +632,7 @@ void Mutation_Annotated_Tree::Tree::create_node (std::string identifier, std::st
     if (n->level > max_level) {
         max_level = n->level;
     }
+    return n;
 }
 
 Mutation_Annotated_Tree::Node* Mutation_Annotated_Tree::Tree::get_node (std::string nid) {
@@ -692,21 +687,7 @@ void Mutation_Annotated_Tree::Tree::remove_node_helper (std::string nid, bool mo
                 child->level = curr_parent->parent->level + 1;
                 child->branch_length += curr_parent->branch_length;
 
-                for (auto m1: curr_parent->mutations) {
-                    bool found_pos = false;
-                    for (auto m2: child->mutations) {
-                        if (m1.position == m2.position) {
-                            found_pos = true;
-                            break;
-                        }
-                        if (m2.position > m1.position) {
-                            break;
-                        }
-                    }
-                    if (!found_pos) {
-                        child->add_mutation(m1);
-                    }
-                }
+                child->mutations.merge(curr_parent->mutations, 1);
 
                 curr_parent->parent->children.push_back(child);
                 
@@ -828,10 +809,12 @@ std::vector<Mutation_Annotated_Tree::Node*> Mutation_Annotated_Tree::Tree::bread
     return traversal;
 }
 
-void Mutation_Annotated_Tree::Tree::depth_first_expansion_helper(Mutation_Annotated_Tree::Node* node, std::vector<Mutation_Annotated_Tree::Node*>& vec) {
+static void depth_first_expansion_helper(Mutation_Annotated_Tree::Node* node, std::vector<Mutation_Annotated_Tree::Node*>& vec, size_t& index) {
     vec.push_back(node);
+    node->index=index;
+    index++;
     for (auto c: node->children) {
-        depth_first_expansion_helper(c, vec);
+        depth_first_expansion_helper(c, vec,index);
     }
 }
 
@@ -840,7 +823,8 @@ std::vector<Mutation_Annotated_Tree::Node*> Mutation_Annotated_Tree::Tree::depth
         node = root;
     }
     std::vector<Node*> traversal;
-    depth_first_expansion_helper(node, traversal);
+    size_t index=0;
+    depth_first_expansion_helper(node, traversal,index);
     return traversal;
 }
 
@@ -918,7 +902,7 @@ void Mutation_Annotated_Tree::Tree::uncondense_leaves() {
     condensed_nodes.clear();
     condensed_leaves.clear();
 }
-
+// Merge nodes that have no mutations comparing to parent into parent node 
 void Mutation_Annotated_Tree::Tree::collapse_tree() {
     auto bfs = breadth_first_expansion();
 
@@ -977,3 +961,23 @@ Mutation_Annotated_Tree::Tree Mutation_Annotated_Tree::get_tree_copy(Mutation_An
     return copy;
 }
 
+void Mutation_Annotated_Tree::exchange(Node *branch1, Node *branch2){
+    //Make sure they are not root
+    assert(!branch1->is_root());
+    assert(!branch2->is_root());
+    Node* const branch1_old_parent=branch1->parent;
+    Node* const branch2_old_parent=branch2->parent;
+
+    //locate branch 1 among the children of branch 1, and replace it with branch2
+    auto iter=std::find(branch1_old_parent->children.begin(),branch1_old_parent->children.end(),branch1);
+    assert(iter!=branch1_old_parent->children.end());//ehh, why not here...
+    *iter=branch2;
+    //change its parent
+    branch2->parent=branch1_old_parent;
+
+    //the same for branch2
+    iter=std::find(branch2_old_parent->children.begin(),branch2_old_parent->children.end(),branch2);
+    assert(iter!=branch2_old_parent->children.end());
+    *iter=branch1;
+    branch1->parent=branch2_old_parent;
+}
