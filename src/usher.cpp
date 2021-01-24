@@ -1235,7 +1235,9 @@ int main(int argc, char **argv) {
                     curr_node_mutation_string = sample + ":";
                     size_t num_mutations = curr_node_mutations.size();
                     for (size_t k = 0; k < num_mutations; k++) {
-                        curr_node_mutation_string += curr_node_mutations.find(k)->get_string();
+                        auto m_iter = curr_node_mutations.begin();
+                        std::advance(m_iter, k);
+                        curr_node_mutation_string += m_iter->get_string();
                         if (k < num_mutations-1) {
                             curr_node_mutation_string += ',';
                         }
@@ -1253,7 +1255,9 @@ int main(int argc, char **argv) {
                         curr_node_mutation_string = anc_node->identifier + ":";
                         size_t num_mutations = curr_node_mutations.size();
                         for (size_t k = 0; k < num_mutations; k++) {
-                            curr_node_mutation_string += curr_node_mutations.find(k)->get_string(); 
+                            auto m_iter = curr_node_mutations.begin();
+                            std::advance(m_iter, k);
+                            curr_node_mutation_string += m_iter->get_string(); 
                             if (k < num_mutations-1) {
                                 curr_node_mutation_string += ',';
                             }
@@ -1434,8 +1438,9 @@ int main(int argc, char **argv) {
                         fprintf(subtree_mutations_file, "%s: ", n->identifier.c_str());
 
                         for (size_t idx = 0; idx < tot_mutations; idx++) {
-                            auto m = subtree_node_mutations[n].find(idx);
-                            fprintf(subtree_mutations_file, "%s", m->get_string().c_str());
+                            auto m_iter = subtree_node_mutations[n].begin();
+                            std::advance(m_iter, idx);
+                            fprintf(subtree_mutations_file, "%s", m_iter->get_string().c_str());
                             if (idx+1 <tot_mutations) {
                                 fprintf(subtree_mutations_file, ",");
                             }
