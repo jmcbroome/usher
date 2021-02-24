@@ -33,9 +33,9 @@ The convert subcommand yields non-protobuf format files representing the tree. T
 
 **-n**: Do not include sample genotype columns in VCF output. Used only with -v
 
-## Filter
+## Mask
 
-The filter subcommand restricts indicated sample names and returns a masked protobuf.
+The mask subcommand restricts indicated sample names and returns a masked protobuf.
 
 ### Specific Options
 
@@ -51,21 +51,21 @@ Describe fetches the path of mutations associated with each indicated sample's p
  
 **-m**: File containing sample names for which mutation paths should be displayed (REQUIRED)
 
-## Prune
+## Filter
 
-Prune removes an indicated set of samples from the input MAT, returning a smaller MAT.
+Filter can either remove an indicated set of samples or remove all but an indicated set of samples, returning a smaller MAT. It automatically switches between different methods based on the size of the input for greatest efficiency. 
 
 ### Specific Options
 
 **-o**: Output mutation annotated tree [REQUIRED]
 
-**-p**: File containing names of samples to be pruned from the input MAT.
+**-s**: File containing names of samples (one per line) [REQUIRED].
 
-**-P**: File containing names of samples to retain in the input MAT, pruning all others.
+**-p**: Use to prune the input samples and return the rest of the tree. Default behavior returns a subtree containing the input samples only.
 
 ## Uncertainty
 
-The uncertainty command calculates placement quality metrics for a set of samples or the whole tree and returns these values in the indicated format.
+The uncertainty command calculates placement quality metrics for a set of samples or the whole tree and returns these values in the indicated format. WARNING: these are uncertainty values for parsimony-resolved samples, which may not completely reflect the uncertainty of a sample which originally had significant ambiguous or missing information.
 
 ### Specific Options
 
