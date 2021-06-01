@@ -633,6 +633,54 @@ std::vector<std::string> find_introductions(MAT::Tree* T, std::map<std::string, 
     return outstrs;
 }
 
+std::map<std::string, boost::gregorian::date> parse_sample_dates(std::vector<std::string> samples, std::map<std::string, std::string> date_metadata = NULL) {
+    std::map<std::string, boost::gregorian::date> dmap;
+    if (date_metadata.size() > 0) {
+        for (auto kv: date_metadata) {
+            auto date = boost::gregorian::from_string(kv->second);
+            dmap[kv->first] = date;
+        }
+    } else {
+        for (auto s: samples) {
+            std::string datestr = s.substr(s.rfind("|"), std::string::npos);
+            if (datestr.size() > 0) {
+                auto date = boost::gregorian::from_string(datestr);
+                dmap[s] = date;
+            }
+        }
+    }
+    return dmap;
+}
+
+boost::gregorian::date infer_node_date(MAT::Tree* T, MAT::Node* n, std::map<std::string, boost::gregorian::date> datemap) {
+    /*
+    This function implements an approximate heuristic which guesstimates the time of occurrence for all internal nodes.
+    */
+    size_t inner_distance = 0;
+    boost::gregorian::date inner_date = boost::gregorian::day_clock::universal_day();
+    for (auto l: T->get_leaves(n->identifier)) {
+        if (datemap.find(l->identifier) != datemap.end()) {
+            if (datemap.find(l->identifier) < inner_date) {
+                inner_date = datemap.find(l->identifier);
+                size_t ldist = 0;
+                for (auto a: )
+            }
+        }
+    }
+    size_t outer_distance = 0;
+    boost::gregorian::date outer_date = boost::gregorian::date(1970,"Jan",1);
+    for (auto a: T->rsearch(n->identifier, false)) {
+}
+
+std::map<std::string, boost::gregorian::date> infer_all_dates(MAT::Tree* T, std::map<std::string, boost::gregorian::date> datemap) {
+    for (auto n: T->depth_first_expansion()) {
+        auto date = infer_node_date(T, n, datemap);
+
+        }
+    }
+}
+
+
 void introduce_main(po::parsed_options parsed) {
     po::variables_map vm = parse_introduce_command(parsed);
     std::string input_mat_filename = vm["input-mat"].as<std::string>();
