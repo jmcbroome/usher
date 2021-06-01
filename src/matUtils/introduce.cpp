@@ -680,7 +680,6 @@ std::map<std::string, boost::gregorian::date> infer_all_dates(MAT::Tree* T, std:
     }
 }
 
-
 void introduce_main(po::parsed_options parsed) {
     po::variables_map vm = parse_introduce_command(parsed);
     std::string input_mat_filename = vm["input-mat"].as<std::string>();
