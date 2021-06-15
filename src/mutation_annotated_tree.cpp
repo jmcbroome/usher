@@ -853,6 +853,16 @@ std::vector<Mutation_Annotated_Tree::Node*> Mutation_Annotated_Tree::Tree::rsear
     return ancestors;
 }
 
+std::string Mutation_Annotated_Tree::Tree::get_clade_assignment (const Node* n, int clade_id, bool include_self) const {
+    assert ((size_t)clade_id < get_num_annotations());
+    for (auto anc: rsearch(n->identifier, include_self)) {
+        if (anc->clade_annotations[clade_id] != "") {
+            return anc->clade_annotations[clade_id];
+        }
+    }
+    return "UNDEFINED";
+}
+
 void Mutation_Annotated_Tree::Tree::remove_node_helper (std::string nid, bool move_level) { 
     auto it = all_nodes.find(nid);
     if (it == all_nodes.end()) {
@@ -1227,7 +1237,7 @@ Mutation_Annotated_Tree::Node* Mutation_Annotated_Tree::LCA (const Mutation_Anno
 // maintains the internal node names of the input tree. Mutations are copied
 // from the tree such that the path of mutations from root to the sample is
 // same as the original tree.
-Mutation_Annotated_Tree::Tree Mutation_Annotated_Tree::get_subtree (const Mutation_Annotated_Tree::Tree& tree, const std::vector<std::string>& samples) {
+Mutation_Annotated_Tree::Tree Mutation_Annotated_Tree::get_subtree (const Mutation_Annotated_Tree::Tree& tree, const std::vector<std::string>& samples, bool keep_clade_annotations) {
     TIMEIT();
     Tree subtree;
 
@@ -1262,7 +1272,10 @@ Mutation_Annotated_Tree::Tree Mutation_Annotated_Tree::get_subtree (const Mutati
     }, ap);
     
     auto dfs = tree.depth_first_expansion();
-    //size_t num_annotations = tree.get_num_annotations();
+    size_t num_annotations = 0;
+    if (keep_clade_annotations) {
+        num_annotations = tree.get_num_annotations();
+    }
 
     std::stack<Node*> last_subtree_node;
     for (auto n: dfs) {
@@ -1278,13 +1291,13 @@ Mutation_Annotated_Tree::Tree Mutation_Annotated_Tree::get_subtree (const Mutati
             // Add as root of the subtree
             if (subtree_parent == NULL) {
                 // for root node, need to size the annotations vector
-                Node* new_node = subtree.create_node(n->identifier, -1.0);
-//                // need to assign any clade annotations which would belong to that root as well
-//                for (size_t k = 0; k < num_annotations; k++) {
-//                    if (n->clade_annotations[k] != "") {
-//                        new_node->clade_annotations[k] = n->clade_annotations[k];
-//                    }
-//                }
+                Node* new_node = subtree.create_node(n->identifier, -1.0, num_annotations);
+                // need to assign any clade annotations which would belong to that root as well
+                for (size_t k = 0; k < num_annotations; k++) {
+                    if (n->clade_annotations[k] != "") {
+                        new_node->clade_annotations[k] = n->clade_annotations[k];
+                    }
+                }
                 std::vector<Node*> root_to_node = tree.rsearch(n->identifier, true); 
                 std::reverse(root_to_node.begin(), root_to_node.end());
                 //root_to_node.emplace_back(n);
@@ -1305,11 +1318,11 @@ Mutation_Annotated_Tree::Tree Mutation_Annotated_Tree::get_subtree (const Mutati
 
 
                 for (auto curr: par_to_node) {
-//                    for (size_t k = 0; k < num_annotations; k++) {
-//                        if (curr->clade_annotations[k] != "") {
-//                            new_node->clade_annotations[k] = curr->clade_annotations[k];
-//                        }
-//                    }
+                    for (size_t k = 0; k < num_annotations; k++) {
+                        if (curr->clade_annotations[k] != "") {
+                            new_node->clade_annotations[k] = curr->clade_annotations[k];
+                        }
+                    }
                     for (auto m: curr->mutations) {
                         new_node->add_mutation(m);
                     }
@@ -1518,13 +1531,11 @@ void Mutation_Annotated_Tree::get_random_sample_subtrees (Mutation_Annotated_Tre
             tbb::parallel_for (tbb::blocked_range<size_t>(i+1, samples.size(), 100),
                     [&](tbb::blocked_range<size_t> r) {
                     for (size_t j=r.begin(); j<r.end(); ++j){
-                        for (size_t j = i+1; j < samples.size(); j++) {
                             if (!displayed_samples[j]) {
                                 if (new_T.get_node(samples[j]) != NULL) {
                                     displayed_samples[j] = true;
                                 }
                             }
-                        }
                     }
                     });
 
